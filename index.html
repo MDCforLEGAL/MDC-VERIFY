@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MDC VERIFY</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-[#0a0a0a] text-white min-h-screen flex items-center justify-center p-6">
+
+  <div class="max-w-md w-full text-center">
+    <!-- Logo / Title -->
+    <div class="mb-10">
+      <div class="text-4xl font-bold tracking-tight mb-2">MDC VERIFY</div>
+      <div class="text-zinc-400 text-sm">Generate your verification code</div>
+    </div>
+
+    <!-- Code Display -->
+    <div id="code-box" class="bg-zinc-900 border border-white/10 rounded-2xl p-8 mb-6 min-h-[100px] flex items-center justify-center">
+      <div id="code-text" class="text-2xl font-mono tracking-widest text-zinc-500">
+        Click the button below
+      </div>
+    </div>
+
+    <!-- Generate Button -->
+    <button onclick="generateCode()" 
+            class="w-full py-4 bg-white text-black font-semibold rounded-2xl text-lg hover:bg-zinc-200 active:scale-[0.98] transition-all mb-4">
+      Generate Code
+    </button>
+
+    <!-- Copy Button -->
+    <button id="copy-btn" onclick="copyCode()" 
+            class="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-2xl text-sm transition-all hidden">
+      Copy Code
+    </button>
+
+    <!-- Info -->
+    <div class="mt-8 text-xs text-zinc-500">
+      Use this code with <span class="text-zinc-300">/verify</span> in Discord
+    </div>
+  </div>
+
+  <script>
+    let currentCode = "";
+
+    function generateCode() {
+      // Generate random code: MDC-XXXXXX (6 random chars)
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let random = "";
+      for (let i = 0; i < 6; i++) {
+        random += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+
+      currentCode = "MDC-" + random;
+
+      const codeText = document.getElementById("code-text");
+      const copyBtn = document.getElementById("copy-btn");
+
+      codeText.textContent = currentCode;
+      codeText.className = "text-3xl font-mono tracking-widest text-white";
+
+      copyBtn.classList.remove("hidden");
+      copyBtn.textContent = "Copy Code";
+    }
+
+    function copyCode() {
+      if (!currentCode) return;
+
+      navigator.clipboard.writeText(currentCode).then(() => {
+        const copyBtn = document.getElementById("copy-btn");
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => {
+          copyBtn.textContent = "Copy Code";
+        }, 1500);
+      }).catch(() => {
+        alert("Code: " + currentCode);
+      });
+    }
+  </script>
+</body>
+</html>
