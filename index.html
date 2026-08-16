@@ -37,51 +37,54 @@
 
     <div class="mt-8 text-xs text-zinc-500">
       Use this code with <span class="text-zinc-300">/verify</span> in Discord<br>
-      Limit: 1 code per IP every 24 hours
+      Limit: 1 code every 24 hours (per browser)
     </div>
   </div>
 
   <script>
     let currentCode = "";
-    const WORKER_URL = "https://mdc-verify.musayt268.workers.dev/";
+    const LOCK_KEY = "mdc_verify_lock";
+    const HOURS_24 = 24 * 60 * 60 * 1000;
 
-    async function generateCode() {
+    function generateCode() {
       const btn = document.getElementById("generate-btn");
       const codeText = document.getElementById("code-text");
       const copyBtn = document.getElementById("copy-btn");
       const errorMsg = document.getElementById("error-msg");
 
-      btn.disabled = true;
-      btn.textContent = "Generating...";
       errorMsg.classList.add("hidden");
 
-      try {
-        const res = await fetch(WORKER_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" }
-        });
+      // 24 saat kontrolü
+      const lastTime = localStorage.getItem(LOCK_KEY);
+      if (lastTime) {
+        const now = Date.now();
+        const diff = now - parseInt(lastTime);
 
-        const data = await res.json();
-
-        if (!res.ok) {
-          errorMsg.textContent = data.error || "Something went wrong";
+        if (diff < HOURS_24) {
+          const remaining = Math.ceil((HOURS_24 - diff) / (60 * 60 * 1000));
+          errorMsg.textContent = `You already generated a code. Try again in ${remaining} hours.`;
           errorMsg.classList.remove("hidden");
-          codeText.textContent = "Failed";
-          codeText.className = "text-2xl font-mono tracking-widest text-red-400";
-        } else {
-          currentCode = data.code;
-          codeText.textContent = currentCode;
-          codeText.className = "text-3xl font-mono tracking-widest text-white";
-          copyBtn.classList.remove("hidden");
-          copyBtn.textContent = "Copy Code";
+          return;
         }
-      } catch (err) {
-        errorMsg.textContent = "Network error. Please try again.";
-        errorMsg.classList.remove("hidden");
       }
 
-      btn.disabled = false;
-      btn.textContent = "Generate Code";
+      // Kod üret
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let code = "MDC-";
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+
+      currentCode = code;
+
+      // 24 saat kilidi koy
+      localStorage.setItem(LOCK_KEY, Date.now().toString());
+
+      // Göster
+      codeText.textContent = currentCode;
+      codeText.className = "text-3xl font-mono tracking-widest text-white";
+      copyBtn.classList.remove("hidden");
+      copyBtn.textContent = "Copy Code";
     }
 
     function copyCode() {
@@ -89,7 +92,9 @@
       navigator.clipboard.writeText(currentCode).then(() => {
         const copyBtn = document.getElementById("copy-btn");
         copyBtn.textContent = "Copied!";
-        setTimeout(() => { copyBtn.textContent = "Copy Code"; }, 1500);
+        setTimeout(() => {
+          copyBtn.textContent = "Copy Code";
+        }, 1500);
       });
     }
   </script>
