@@ -5,84 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MDC VERIFY</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { font-family: 'Inter', system-ui, sans-serif; }
-  </style>
+  <style>body { font-family: 'Inter', system-ui, sans-serif; }</style>
 </head>
 <body class="bg-[#0a0a0a] text-white min-h-screen flex items-center justify-center p-6">
-
   <div class="max-w-md w-full text-center">
     <div class="mb-10">
       <div class="text-4xl font-bold tracking-tight mb-2">MDC VERIFY</div>
       <div class="text-zinc-400 text-sm">Generate your verification code</div>
     </div>
-
-    <div id="code-box" class="bg-zinc-900 border border-white/10 rounded-2xl p-8 mb-6 min-h-[100px] flex items-center justify-center">
-      <div id="code-text" class="text-2xl font-mono tracking-widest text-zinc-500">
-        Click the button below
-      </div>
+    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-8 mb-6 min-h-[100px] flex items-center justify-center">
+      <div id="code-text" class="text-2xl font-mono tracking-widest text-zinc-500">Click the button below</div>
     </div>
-
-    <button id="generate-btn" onclick="generateCode()" 
-            class="w-full py-4 bg-white text-black font-semibold rounded-2xl text-lg hover:bg-zinc-200 active:scale-[0.98] transition-all mb-4">
-      Generate Code
-    </button>
-
-    <button id="copy-btn" onclick="copyCode()" 
-            class="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-2xl text-sm transition-all hidden">
-      Copy Code
-    </button>
-
+    <button id="generate-btn" onclick="generateCode()" class="w-full py-4 bg-white text-black font-semibold rounded-2xl text-lg hover:bg-zinc-200 active:scale-[0.98] transition-all mb-4">Generate Code</button>
+    <button id="copy-btn" onclick="copyCode()" class="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-2xl text-sm transition-all hidden">Copy Code</button>
     <div id="error-msg" class="mt-4 text-sm text-red-400 hidden"></div>
-
-    <div class="mt-8 text-xs text-zinc-500">
-      Use this code with <span class="text-zinc-300">/verify</span> in Discord<br>
-      Limit: 1 code every 24 hours (per browser)
-    </div>
+    <div class="mt-8 text-xs text-zinc-500">Use this code with <span class="text-zinc-300">/verify</span> in Discord<br>Limit: 1 code every 24 hours (per browser)</div>
   </div>
-
   <script>
-    let currentCode = "";
+    const CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const LOCK_KEY = "mdc_verify_lock";
     const HOURS_24 = 24 * 60 * 60 * 1000;
+    let currentCode = "";
+
+    function checksum(body) {
+      let a = 0, b = 0;
+      for (let i = 0; i < body.length; i++) {
+        const n = CHARS.indexOf(body[i]);
+        a = (a + (n + 3) * (i + 7)) % CHARS.length;
+        b = (b + a + n * 5) % CHARS.length;
+      }
+      return CHARS[a] + CHARS[b];
+    }
 
     function generateCode() {
-      const btn = document.getElementById("generate-btn");
-      const codeText = document.getElementById("code-text");
-      const copyBtn = document.getElementById("copy-btn");
       const errorMsg = document.getElementById("error-msg");
-
       errorMsg.classList.add("hidden");
-
-      // 24 saat kontrolü
       const lastTime = localStorage.getItem(LOCK_KEY);
-      if (lastTime) {
-        const now = Date.now();
-        const diff = now - parseInt(lastTime);
-
-        if (diff < HOURS_24) {
-          const remaining = Math.ceil((HOURS_24 - diff) / (60 * 60 * 1000));
-          errorMsg.textContent = `You already generated a code. Try again in ${remaining} hours.`;
-          errorMsg.classList.remove("hidden");
-          return;
-        }
+      if (lastTime && Date.now() - parseInt(lastTime) < HOURS_24) {
+        const remaining = Math.ceil((HOURS_24 - (Date.now() - parseInt(lastTime))) / 3600000);
+        errorMsg.textContent = "You already generated a code. Try again in " + remaining + " hours.";
+        errorMsg.classList.remove("hidden");
+        return;
       }
-
-      // Kod üret
-      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-      let code = "MDC-";
-      for (let i = 0; i < 6; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-
-      currentCode = code;
-
-      // 24 saat kilidi koy
+      let body = "";
+      for (let i = 0; i < 6; i++) body += CHARS[Math.floor(Math.random() * CHARS.length)];
+      currentCode = "MDC-" + body + checksum(body);
       localStorage.setItem(LOCK_KEY, Date.now().toString());
-
-      // Göster
+      const codeText = document.getElementById("code-text");
       codeText.textContent = currentCode;
-      codeText.className = "text-3xl font-mono tracking-widest text-white";
+      codeText.className = "text-2xl font-mono tracking-widest text-white";
+      const copyBtn = document.getElementById("copy-btn");
       copyBtn.classList.remove("hidden");
       copyBtn.textContent = "Copy Code";
     }
@@ -92,9 +64,7 @@
       navigator.clipboard.writeText(currentCode).then(() => {
         const copyBtn = document.getElementById("copy-btn");
         copyBtn.textContent = "Copied!";
-        setTimeout(() => {
-          copyBtn.textContent = "Copy Code";
-        }, 1500);
+        setTimeout(() => { copyBtn.textContent = "Copy Code"; }, 1500);
       });
     }
   </script>
