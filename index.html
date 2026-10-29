@@ -11,25 +11,52 @@
     h1 { margin: 0 0 8px; font-size: 32px; }
     p { color: #bdbdbd; }
     a, button { display: block; width: 100%; margin-top: 16px; padding: 14px 16px; border: 0; border-radius: 16px; background: #fff; color: #111; font: 700 16px system-ui, sans-serif; text-decoration: none; cursor: pointer; }
+    a.disabled { pointer-events: none; opacity: .4; }
     .ok { color: #7dffa1; }
     .bad { color: #ff8d8d; }
+    .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+    .tiles button { margin: 0; background: #222; color: #fff; }
+    .tiles button.good { background: #fff; color: #111; }
   </style>
 </head>
 <body>
   <main class="card">
     <h1>MDC VERIFY</h1>
-    <p id="text">Connect your Discord account. The bot will check it, then verify you.</p>
-    <a id="go" href="https://mdc-hub.musayt266.workers.dev/api/verify/start">Connect Discord</a>
+    <p id="text">Beat the small game, then connect Discord.</p>
+    <div class="tiles" id="tiles"></div>
+    <a id="go" class="disabled" href="https://mdc-hub.musayt266.workers.dev/api/verify/start">Connect Discord</a>
   </main>
   <script>
     const params = new URLSearchParams(location.search);
     const status = params.get('status');
     const text = document.getElementById('text');
     const go = document.getElementById('go');
-    if (status === 'ok') { text.textContent = 'Verified. You can return to Discord.'; text.className = 'ok'; go.remove(); }
-    if (status === 'already') { text.textContent = 'You are already verified.'; text.className = 'ok'; go.remove(); }
-    if (status === 'notin') { text.textContent = 'Join the Discord server first, then try again.'; text.className = 'bad'; }
-    if (status === 'fail') { text.textContent = 'The bot check failed. Try again.'; text.className = 'bad'; }
+    const tiles = document.getElementById('tiles');
+    if (status) {
+      tiles.remove();
+      if (status === 'ok') { text.textContent = 'Verified. You can return to Discord.'; text.className = 'ok'; go.remove(); }
+      if (status === 'already') { text.textContent = 'You are already verified.'; text.className = 'ok'; go.remove(); }
+      if (status === 'notin') { text.textContent = 'Join the Discord server first, then try again.'; text.className = 'bad'; go.classList.remove('disabled'); }
+      if (status === 'fail') { text.textContent = 'The bot check failed. Try again.'; text.className = 'bad'; go.classList.remove('disabled'); }
+    } else {
+      const words = ['star', 'moon', 'leaf', 'wave'];
+      let round = 0;
+      function draw() {
+        const answer = words[Math.floor(Math.random() * words.length)];
+        const choices = words.slice().sort(() => Math.random() - 0.5);
+        text.textContent = 'Round ' + (round + 1) + ' of 3. Tap ' + answer + '.';
+        tiles.innerHTML = choices.map(word => '<button type="button" data-word="' + word + '">' + word + '</button>').join('');
+        tiles.querySelectorAll('button').forEach(button => {
+          button.onclick = () => {
+            if (button.dataset.word !== answer) { text.textContent = 'Wrong. Try again.'; return draw(); }
+            round += 1;
+            if (round >= 3) { text.textContent = 'Game done. Connect Discord. You will come back here.'; tiles.remove(); go.classList.remove('disabled'); return; }
+            draw();
+          };
+        });
+      }
+      draw();
+    }
   </script>
 </body>
 </html>
